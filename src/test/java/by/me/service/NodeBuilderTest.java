@@ -4,9 +4,8 @@ import org.junit.Test;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.regex.Matcher;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public class NodeBuilderTest {
 

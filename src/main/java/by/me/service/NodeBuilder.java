@@ -172,7 +172,6 @@ public class NodeBuilder {
         for (int index : deepInternalTagSet) {
             outputSet.remove(index);
         }
-
         return outputSet;
     }
 
