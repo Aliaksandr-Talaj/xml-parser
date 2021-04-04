@@ -22,7 +22,7 @@ public class NodeBuilder {
 
         while (anyOpeningTagMatcher.find()) {
             String name = parseName(string, anyOpeningTagMatcher.start());
-            Map<Integer, Integer> openingClosingTagsStartIndexesMap = new HashMap<>();
+            Map<Integer, Integer> openingAndClosingTagsStartIndexesMap;
 
             Pattern openingTagPattern =
                     Pattern.compile("(<" + name + ")[A-z\\-0-9\\$\\.]*(:)?[A-z\\-0-9\\s\\$\\.\\=\"]*(>)");
@@ -37,27 +37,32 @@ public class NodeBuilder {
             while (closingTagMatcher.find()) {
                 closingTagsStartIndexes.add(closingTagMatcher.start());
             }
-            openingClosingTagsStartIndexesMap = createMapForTag(openingTagsStartIndexes, closingTagsStartIndexes);
-            for (int openingTagStartIndex : openingClosingTagsStartIndexesMap.keySet()) {
-                tagsStartMap.put(openingTagStartIndex, openingClosingTagsStartIndexesMap.get(openingTagStartIndex));
+            openingAndClosingTagsStartIndexesMap = createMapForTag(openingTagsStartIndexes, closingTagsStartIndexes);
+            for (int openingTagStartIndex : openingAndClosingTagsStartIndexesMap.keySet()) {
+                tagsStartMap.put(openingTagStartIndex, openingAndClosingTagsStartIndexesMap.get(openingTagStartIndex));
             }
         }
     }
 
 
-    private Map<Integer, Integer> createMapForTag(List<Integer> openingTagsStartIndexes, List<Integer> closingTagsStartIndexes) {
+    private Map<Integer, Integer> createMapForTag(List<Integer> openingTagsStartIndexes,
+                                                  List<Integer> closingTagsStartIndexes) {
         Map<Integer, Integer> resultMap = new HashMap<>();
         Collections.sort(openingTagsStartIndexes);
         Collections.sort(closingTagsStartIndexes);
-        int closingMaxIndex = closingTagsStartIndexes.stream().max(Comparator.naturalOrder()).get();
-        for (Integer closingTagsStartIndex : closingTagsStartIndexes) {
+        int closingTagMaxStartIndex = closingTagsStartIndexes
+                .stream()
+                .max(Comparator
+                        .naturalOrder())
+                .get();
+        for (Integer closingTagStartIndex : closingTagsStartIndexes) {
             boolean valueNotDefined = true;
             for (int i = openingTagsStartIndexes.size() - 1; valueNotDefined && i >= 0; i--) {
-                int openingIndex = openingTagsStartIndexes.get(i);
-                int closingIndex = closingTagsStartIndex;
-                if (closingIndex > openingIndex) {
-                    resultMap.put(openingIndex, closingIndex);
-                    openingTagsStartIndexes.set(i, closingMaxIndex);
+                int openingTagIndex = openingTagsStartIndexes.get(i);
+                int closingTagIndex = closingTagStartIndex;
+                if (closingTagIndex > openingTagIndex) {
+                    resultMap.put(openingTagIndex, closingTagIndex);
+                    openingTagsStartIndexes.set(i, closingTagMaxStartIndex);
                     valueNotDefined = false;
                 }
             }
@@ -71,24 +76,24 @@ public class NodeBuilder {
         Node outputNode = new Node();
         List<Node> childNodes = new ArrayList<>();
         Matcher anyOpeningTagMatcher = anyOpeningTagPattern.matcher(inputString);
-        int startOfOpeningTag;
-        int endOfOpeningTag;
+        int startIndexOfOpeningTag;
+        int endIndexOfOpeningTag;
         String name = "";
 
         if (anyOpeningTagMatcher.find(startAt)) {
-            startOfOpeningTag = anyOpeningTagMatcher.start();
-            endOfOpeningTag = anyOpeningTagMatcher.end();
+            startIndexOfOpeningTag = anyOpeningTagMatcher.start();
+            endIndexOfOpeningTag = anyOpeningTagMatcher.end();
             name = parseName(inputString, anyOpeningTagMatcher.start());
 
             if (!"".equals(name)) {
                 outputNode.setName(name);
             } else {
-                throw new Exception("Can not parse name of tag at position" + startOfOpeningTag);
+                throw new Exception("Can not parse name of tag at position" + startIndexOfOpeningTag);
             }
 
-            if (inputString.substring(startOfOpeningTag, endOfOpeningTag).contains("=")) {
+            if (inputString.substring(startIndexOfOpeningTag, endIndexOfOpeningTag).contains("=")) {
                 Map<String, String> attributes;
-                attributes = parseAttributes(inputString, startOfOpeningTag, endOfOpeningTag);
+                attributes = parseAttributes(inputString, startIndexOfOpeningTag, endIndexOfOpeningTag);
                 outputNode.setAttributes(attributes);
             }
 
@@ -96,7 +101,7 @@ public class NodeBuilder {
                 mapTags(inputString);
             }
 
-            Set<Integer> innerTagsStartIndexes = getIndexesOfInnerTags(inputString, startOfOpeningTag);
+            Set<Integer> innerTagsStartIndexes = getIndexesOfInnerTags(inputString, startIndexOfOpeningTag);
 
             if (!innerTagsStartIndexes.isEmpty()) {
                 for (int index : innerTagsStartIndexes) {
@@ -104,8 +109,8 @@ public class NodeBuilder {
                     childNodes.add(node);
                 }
             } else {
-                int closingTagStartIndex = tagsStartMap.get(startOfOpeningTag);
-                String content = inputString.substring(endOfOpeningTag, closingTagStartIndex).trim();
+                int closingTagStartIndex = tagsStartMap.get(startIndexOfOpeningTag);
+                String content = inputString.substring(endIndexOfOpeningTag, closingTagStartIndex).trim();
                 if (!"".equals(content)) {
                     outputNode.setContent(content);
                 }

@@ -23,6 +23,7 @@ public class Main {
 
         Node resultNode = nodeBuilder.build(inputString, 0);
 
+        resultNode.printStructure();
     }
 
 }
